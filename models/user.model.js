@@ -1,0 +1,69 @@
+const mongoose = require("mongoose");
+// const { Post } = require("./post.model");
+require("mongoose-type-url");
+
+const UserSchema = new mongoose.Schema(
+   {
+      firstName: {
+         type: String,
+         required: "First name is required",
+      },
+      lastName: {
+         type: String,
+         required: "Last name is required",
+      },
+      fullName: {
+         type: String,
+      },
+      userName: {
+         type: String,
+         required: "User name is required",
+         unique: true,
+      },
+
+      email: {
+         type: String,
+         required: "email is required",
+         unique: true,
+         validate: {
+            validator: function (value) {
+               return /^([^@]+)([@]{1})([a-z]+)\.com$/.test(value);
+            },
+            message: (props) => `${props.value} is not email!`,
+         },
+      },
+
+      profilePic: {
+         type: mongoose.SchemaTypes.Url,
+      },
+
+      profilePicName: {
+         type: String,
+      },
+
+      password: {
+         type: String,
+         required: "password is required",
+      },
+      token: { type: String },
+
+      website: { type: String },
+
+      bio: { type: String },
+
+      following: [{ user: { type: mongoose.Schema.Types.ObjectId, ref: "User" } }],
+
+      followers: [{ user: { type: mongoose.Schema.Types.ObjectId, ref: "User" } }],
+
+      bookmarks: [{ user: { type: mongoose.Schema.Types.ObjectId, ref: "Post" } }],
+   },
+   {
+      timestamps: true,
+   }
+);
+
+const User = mongoose.model("User", UserSchema);
+
+module.exports = {
+   User,
+};
