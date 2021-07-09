@@ -1,21 +1,30 @@
 const express = require("express");
 require("body-parser");
+const app = express();
+const cors = require("cors");
 
+const dbConnect = require("./db/db.connect");
+const { authentication } = require("./middlewares/authentication.middleware");
 const errorHandler = require("./middlewares/error-handler.middleware");
 const routeNotFound = require("./middlewares/route-not-found-handler.middleware");
 
-const app = express();
+const user = require("./routes/user.route");
+const post = require("./routes/post.route");
+
 app.use(express.json());
 
-const cors = require("cors");
 app.use(cors());
 
-const dbConnect = require("./db/db.connect");
 dbConnect();
 
 app.get("/", (req, res) => {
    res.json("Welcome to BaddyBuzz backend!");
 });
+
+app.use("/user", user);
+
+app.use(authentication);
+app.use("/post", post);
 
 // must stay last
 app.use(errorHandler);

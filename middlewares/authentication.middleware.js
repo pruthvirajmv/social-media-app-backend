@@ -15,11 +15,11 @@ const authentication = async (req, res, next) => {
       }
       req.user = user;
       next();
-   } catch (err) {
+   } catch (error) {
       res.status(500).send({
          success: false,
          message: "something went wrong",
-         errorMessage: err.message,
+         errorMessage: error.message,
       });
    }
 };

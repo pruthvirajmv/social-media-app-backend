@@ -1,4 +1,5 @@
 const { User } = require("../models/user.model");
+const { Post } = require("../models/post.model");
 
 var jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -9,9 +10,10 @@ const { extend } = require("lodash");
 
 const addNewUser = async (req, res) => {
    try {
-      const { username, email, password } = req.body;
-      const user = { userName: username, email: email, password: password };
-      const NewUser = new User(user);
+      const { addUser } = req.body;
+      addUser.fullName = `${addUser.firstName} ${addUser.lastName}`;
+      addUser.profilePicName = (addUser.firstName[0] + (addUser?.lastName[0] || "")).toUpperCase();
+      const NewUser = new User(addUser);
       const salt = await bcrypt.genSalt(10);
       NewUser.password = await bcrypt.hash(NewUser.password, salt);
       await NewUser.save();
@@ -44,19 +46,21 @@ const addNewUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
    try {
-      const { username, password } = req.body;
+      const { email, password } = req.body;
 
-      let user = await User.findOne({ userName: username });
+      let user = await User.findOne({ email: email });
 
       if (user) {
          const verifyPassword = await bcrypt.compare(password, user.password);
          if (verifyPassword) {
             const token = jwt.sign({ userId: user._id }, JWT_KEY, { expiresIn: "24h" });
+            user.token = token;
+            await user.save();
             user.__v = undefined;
             user.password = undefined;
-            return res.status(200).json({ message: "user logged in", user, token });
+            return res.status(200).json({ message: "user logged in", user });
          }
-         return res.status(403).json({ message: "username and password did not match" });
+         return res.status(403).json({ message: "email and password did not match" });
       }
       res.status(404).json({ message: "user does not exist " });
    } catch (error) {
@@ -89,60 +93,130 @@ const resetOrUpdateUserPassword = async (req, res) => {
    }
 };
 
-const getUserProfile = (req, res) => {
-   const { user } = req;
-   user.__v = undefined;
-   res.status(200).json({ user });
-};
-
-const updateUserProfile = async (req, res) => {
+const getUserProfile = async (req, res) => {
    try {
       let { user } = req;
-      const { password } = req.body;
-      const updateUserPassword = { password: password };
-      user = extend(user, updateUserPassword);
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(user.password, salt);
-      user = await user.save();
-      res.status(200).json({ message: "user credentials updated", user });
+      user.password = undefined;
+      user.__v = undefined;
+
+      user = await user
+         .populate({
+            path: "followers.user",
+            select: "_id userName fullName profilePicName profilePic ",
+         })
+         .execPopulate();
+
+      user = await user
+         .populate({
+            path: "following.user",
+            select: "_id userName fullName profilePicName profilePic ",
+         })
+         .execPopulate();
+
+      user = await user.populate("bookmarks.post").execPopulate();
+
+      res.status(200).json({ user });
    } catch (error) {
       res.status(500).json({
-         message: "cannot retrieve user",
+         message: "cannot retrieve user details",
          errorMessage: error.message,
       });
    }
 };
 
-const attemptedQuizAndSetHighScore = async (req, res) => {
+const updateUserProfile = async (req, res) => {
    try {
       let { user } = req;
-      const { attemptedLevel, newScore } = req.body;
-
-      let userHighScore = user.highScore.find(({ level }) => level === attemptedLevel);
-      if (!userHighScore) {
-         user.highScore.push({ level: attemptedLevel, score: newScore, attempts: 1 });
-         await user.save();
-         return res
-            .status(200)
-            .json({
-               message: "new high score",
-               newHighScore: { level: attemptedLevel, score: newScore, attempts: 1 },
-            });
-      }
-
-      userHighScore.attempts += 1;
-      userHighScore.score = newScore > userHighScore.score ? newScore : userHighScore.score;
-      await user.save();
-      res.status(200).json({ message: "user high score updated", newHighScore: userHighScore });
-   } catch (error) {}
+      const { updateUser } = req.body;
+      user = extend(user, updateUser);
+      user = await user.save();
+      user.__v = undefined;
+      user.password = undefined;
+      res.status(200).json({ message: "user profile updated", user });
+   } catch (error) {
+      res.status(500).json({
+         message: "something went wrong, please try again",
+         errorMessage: error.message,
+      });
+   }
 };
 
-const getUserHighScores = async (req, res) => {
+const togglePostFromBookmarks = async (req, res) => {
    try {
-      const { user } = req;
-      res.status(200).json({ message: "user highscore found", highScores: user.highScore });
+      let { user } = req;
+      const { postId } = req.body;
+      const isBookmarked = user.bookmarks.find((bookmark) => bookmark.post === postId);
+      if (!isBookmarked) {
+         user.bookmarks.push({ post: postId });
+         await user.save();
+         user = await user.populate("bookmarks.post").execPopulate();
+         res.status(200).json({ message: "post bookmarked", bookmarks: user.bookmarks });
+      } else {
+         user.bookmarks.filter((bookmark) => bookmark.post !== postId);
+         await user.save();
+         user = await user.populate("bookmarks.post").execPopulate();
+
+         res.status(200).json({ message: "post removed from bookmark", bookmarks: user.bookmarks });
+      }
    } catch (error) {
-      res.status(400).json({ message: "user highscore not found", errorMessage: error.message });
+      res.status(500).json({
+         message: "something went wrong, please try again",
+         errorMessage: error.message,
+      });
+   }
+};
+
+const toggleUserFromFollowing = async (req, res) => {
+   try {
+      let { user } = req;
+      const { userId } = req.body;
+      let toggleFollowersOfUser = await User.findById(userId);
+      const isFollowing = user.following.findIndex(
+         (following) => following.user.toString() === userId
+      );
+      if (isFollowing >= 0) {
+         user.following = user.following.filter(
+            (following) => following.user.toString() !== userId
+         );
+         toggleFollowersOfUser.followers = toggleFollowersOfUser.followers.filter(
+            (follower) => follower.user.toString() !== user._id.toString()
+         );
+         await user.save();
+         await toggleFollowersOfUser.save();
+
+         user = await user
+            .populate({
+               path: "following.user",
+               select: "_id userName fullName profilePicName profilePic ",
+            })
+            .execPopulate();
+
+         res.status(200).json({
+            message: "user removed from following list",
+            following: user.following,
+         });
+      } else {
+         user.following.push({ user: userId });
+         toggleFollowersOfUser.followers.push({ user: user._id });
+         await user.save();
+         await toggleFollowersOfUser.save();
+
+         user = await user
+            .populate({
+               path: "following.user",
+               select: "_id userName fullName profilePicName profilePic ",
+            })
+            .execPopulate();
+         res.status(200).json({
+            message: "user added to following list",
+            following: user.following,
+         });
+      }
+   } catch (error) {
+      res.status(500).json({
+         message: "something went wrong, please try again",
+         errorMessage: error.message,
+      });
    }
 };
 
@@ -152,6 +226,8 @@ module.exports = {
    resetOrUpdateUserPassword,
    getUserProfile,
    updateUserProfile,
-   attemptedQuizAndSetHighScore,
-   getUserHighScores,
+
+   toggleUserFromFollowing,
+
+   togglePostFromBookmarks,
 };

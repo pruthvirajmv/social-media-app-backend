@@ -9,7 +9,11 @@ const PostSchema = new mongoose.Schema(
 
       media: { type: mongoose.SchemaTypes.Url },
 
-      author: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      author: {
+         type: mongoose.Schema.Types.ObjectId,
+         ref: "User",
+         required: "post author is required",
+      },
 
       likedBy: [{ user: { type: mongoose.Schema.Types.ObjectId, ref: "User" } }],
 
@@ -17,7 +21,7 @@ const PostSchema = new mongoose.Schema(
          { user: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, comment: { type: String } },
       ],
 
-      createdOn: { type: String },
+      createdOn: { type: String, required: "post creation date is required" },
    },
    {
       timestamps: true,

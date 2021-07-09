@@ -33,29 +33,30 @@ const UserSchema = new mongoose.Schema(
          },
       },
 
+      password: {
+         type: String,
+         required: "password is required",
+      },
+      token: { type: String, default: "" },
+
       profilePic: {
          type: mongoose.SchemaTypes.Url,
+         default: "",
       },
 
       profilePicName: {
          type: String,
       },
 
-      password: {
-         type: String,
-         required: "password is required",
-      },
-      token: { type: String },
+      website: { type: String, default: "" },
 
-      website: { type: String },
-
-      bio: { type: String },
+      bio: { type: String, default: "" },
 
       following: [{ user: { type: mongoose.Schema.Types.ObjectId, ref: "User" } }],
 
       followers: [{ user: { type: mongoose.Schema.Types.ObjectId, ref: "User" } }],
 
-      bookmarks: [{ user: { type: mongoose.Schema.Types.ObjectId, ref: "Post" } }],
+      bookmarks: [{ post: { type: mongoose.Schema.Types.ObjectId, ref: "Post" } }],
    },
    {
       timestamps: true,

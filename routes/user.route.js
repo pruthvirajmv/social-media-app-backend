@@ -7,23 +7,26 @@ const {
    resetOrUpdateUserPassword,
    getUserProfile,
    updateUserProfile,
-   attemptedQuizAndSetHighScore,
-   getUserHighScores,
+
+   toggleUserFromFollowing,
+
+   togglePostFromBookmarks,
 } = require("../controllers/user.controller");
 
 const { authentication } = require("../middlewares/authentication.middleware");
 
-router.route("/").get(authentication, getUserProfile).post(authentication, updateUserProfile);
+router.route("/profile").get(authentication, getUserProfile);
 
-router.route("/register").post(addNewUser);
+router.route("/updateprofile").post(authentication, updateUserProfile);
+
+router.route("/signup").post(addNewUser);
 
 router.route("/login").post(loginUser);
 
 router.route("/resetpassword").post(resetOrUpdateUserPassword);
 
-router
-   .route("/highscore")
-   .get(authentication, getUserHighScores)
-   .post(authentication, attemptedQuizAndSetHighScore);
+router.route("/bookmark").post(authentication, togglePostFromBookmarks);
+
+router.route("/follow").post(authentication, toggleUserFromFollowing);
 
 module.exports = router;
