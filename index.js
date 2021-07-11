@@ -23,7 +23,6 @@ app.get("/", (req, res) => {
 
 app.use("/user", user);
 
-app.use(authentication);
 app.use("/post", post);
 
 // must stay last

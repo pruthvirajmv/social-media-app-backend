@@ -1,5 +1,4 @@
 const { User } = require("../models/user.model");
-const { Post } = require("../models/post.model");
 
 var jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -93,6 +92,28 @@ const resetOrUpdateUserPassword = async (req, res) => {
    }
 };
 
+const getUsersProfile = async (req, res) => {
+   try {
+      let users = await User.find({}, "userName fullName profilePic profilePicName")
+         .populate({
+            path: "followers.user",
+            select: "_id userName fullName profilePicName profilePic ",
+         })
+         .populate({
+            path: "following.user",
+            select: "_id userName fullName profilePicName profilePic ",
+         })
+         .exec();
+
+      res.status(200).json({ users });
+   } catch (error) {
+      res.status(500).json({
+         message: "cannot retrieve users details",
+         errorMessage: error.message,
+      });
+   }
+};
+
 const getUserProfile = async (req, res) => {
    try {
       let { user } = req;
@@ -132,6 +153,22 @@ const updateUserProfile = async (req, res) => {
       user = await user.save();
       user.__v = undefined;
       user.password = undefined;
+      user = await user
+         .populate({
+            path: "followers.user",
+            select: "_id userName fullName profilePicName profilePic ",
+         })
+         .execPopulate();
+
+      user = await user
+         .populate({
+            path: "following.user",
+            select: "_id userName fullName profilePicName profilePic ",
+         })
+         .execPopulate();
+
+      user = await user.populate("bookmarks.post").execPopulate();
+
       res.status(200).json({ message: "user profile updated", user });
    } catch (error) {
       res.status(500).json({
@@ -145,14 +182,14 @@ const togglePostFromBookmarks = async (req, res) => {
    try {
       let { user } = req;
       const { postId } = req.body;
-      const isBookmarked = user.bookmarks.find((bookmark) => bookmark.post === postId);
+      const isBookmarked = user.bookmarks.find((bookmark) => bookmark.post.toString() === postId);
       if (!isBookmarked) {
          user.bookmarks.push({ post: postId });
          await user.save();
          user = await user.populate("bookmarks.post").execPopulate();
          res.status(200).json({ message: "post bookmarked", bookmarks: user.bookmarks });
       } else {
-         user.bookmarks.filter((bookmark) => bookmark.post !== postId);
+         user.bookmarks = user.bookmarks.filter((bookmark) => bookmark.post.toString() !== postId);
          await user.save();
          user = await user.populate("bookmarks.post").execPopulate();
 
@@ -221,6 +258,8 @@ const toggleUserFromFollowing = async (req, res) => {
 };
 
 module.exports = {
+   getUsersProfile,
+
    addNewUser,
    loginUser,
    resetOrUpdateUserPassword,
@@ -228,6 +267,5 @@ module.exports = {
    updateUserProfile,
 
    toggleUserFromFollowing,
-
    togglePostFromBookmarks,
 };

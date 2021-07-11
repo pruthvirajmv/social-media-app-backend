@@ -1,10 +1,37 @@
 const { Post } = require("../models/post.model");
+const { User } = require("../models/user.model");
 
+const loadSelectedUserPosts = async (req, res) => {
+   try {
+      const { username } = req.params;
+      const user = await User.findOne({ userName: username });
+      const userPosts = await Post.find({ author: user._id })
+         .populate({
+            path: "author",
+            select: "_id userName fullName profilePicName profilePic ",
+         })
+         .populate({
+            path: "likedBy.user",
+            select: "_id userName fullName profilePicName profilePic ",
+         })
+         .populate({
+            path: "comments.user",
+            select: "_id userName fullName profilePicName profilePic ",
+         })
+         .exec();
+
+      res.status(200).json({ message: "user posts loaded", userPosts });
+   } catch (error) {
+      res.status(500).json({
+         message: "could not load user posts",
+         errorMessage: error.message,
+      });
+   }
+};
 const loadUserPosts = async (req, res) => {
    try {
       const { user } = req;
-      console.log(user);
-      let userPosts = await Post.find({ author: user._id })
+      let userPosts = await Post.find({})
          .populate({
             path: "author",
             select: "_id userName fullName profilePicName profilePic ",
@@ -137,4 +164,11 @@ const addComment = async (req, res) => {
    }
 };
 
-module.exports = { loadUserPosts, addNewPost, deletePost, toggleLike, addComment };
+module.exports = {
+   loadSelectedUserPosts,
+   loadUserPosts,
+   addNewPost,
+   deletePost,
+   toggleLike,
+   addComment,
+};
