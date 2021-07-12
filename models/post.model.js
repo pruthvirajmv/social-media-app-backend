@@ -22,6 +22,8 @@ const PostSchema = new mongoose.Schema(
       ],
 
       createdOn: { type: Number, required: "post creation date is required" },
+
+      isRemoved: { type: Boolean, default: false },
    },
    {
       timestamps: true,

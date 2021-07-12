@@ -136,6 +136,8 @@ const getUserProfile = async (req, res) => {
 
       user = await user.populate("bookmarks.post").execPopulate();
 
+      user.bookmarks = user.bookmarks.filter(({ post }) => !post.isRemoved);
+
       res.status(200).json({ user });
    } catch (error) {
       res.status(500).json({
@@ -168,6 +170,8 @@ const updateUserProfile = async (req, res) => {
          .execPopulate();
 
       user = await user.populate("bookmarks.post").execPopulate();
+
+      user.bookmarks = user.bookmarks.filter(({ post }) => !post.isRemoved);
 
       res.status(200).json({ message: "user profile updated", user });
    } catch (error) {

@@ -20,6 +20,8 @@ const loadSelectedUserPosts = async (req, res) => {
          })
          .exec();
 
+      userPosts = userPosts.filter(({ post }) => !post.isRemoved);
+
       res.status(200).json({ message: "user posts loaded", userPosts });
    } catch (error) {
       res.status(500).json({
@@ -45,6 +47,8 @@ const loadUserPosts = async (req, res) => {
             select: "_id userName fullName profilePicName profilePic ",
          })
          .exec();
+
+      userPosts = userPosts.filter(({ post }) => !post.isRemoved);
 
       res.status(200).json({ message: "user posts loaded", userPosts });
    } catch (error) {
@@ -90,7 +94,9 @@ const deletePost = async (req, res) => {
    try {
       let { postId } = req.body;
 
-      const deletedPost = await Post.findByIdAndDelete(postId);
+      let deletedPost = await Post.findById(postId);
+      deletedPost.post.isRemoved = true;
+      await deletedPost.save();
 
       res.status(200).json({ message: "post deleted", postId });
    } catch (error) {
