@@ -48,7 +48,7 @@ const loadUserPosts = async (req, res) => {
          })
          .exec();
 
-      userPosts = userPosts.filter(({ post }) => !post.isRemoved);
+      userPosts = userPosts.filter((post) => !post.isRemoved);
 
       res.status(200).json({ message: "user posts loaded", userPosts });
    } catch (error) {
