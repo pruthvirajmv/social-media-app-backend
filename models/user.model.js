@@ -57,6 +57,17 @@ const UserSchema = new mongoose.Schema(
       followers: [{ user: { type: mongoose.Schema.Types.ObjectId, ref: "User" } }],
 
       bookmarks: [{ post: { type: mongoose.Schema.Types.ObjectId, ref: "Post" } }],
+
+      notifications: [
+         {
+            notificationType: { type: String, enum: ["LIKED", "FOLLOWED"] },
+            activityByUser: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+            notify: { type: String },
+            likedPost: { type: mongoose.Schema.Types.ObjectId, ref: "Post" },
+            isRead: { type: Boolean },
+            createdOn: { type: Date },
+         },
+      ],
    },
    {
       timestamps: true,

@@ -46,7 +46,7 @@ const loadUserPosts = async (req, res) => {
             path: "comments.user",
             select: "_id userName fullName profilePicName profilePic ",
          })
-         .exec();
+         .sort({ createdOn: "desc" });
 
       userPosts = userPosts.filter((post) => !post.isRemoved);
 
@@ -65,7 +65,6 @@ const addNewPost = async (req, res) => {
 
       let { addPost } = req.body;
       addPost.author = user._id;
-      addPost.createdOn = Date.now();
 
       let newPost = new Post(addPost);
       await newPost.save();
@@ -95,7 +94,7 @@ const deletePost = async (req, res) => {
       let { postId } = req.body;
 
       let deletedPost = await Post.findById(postId);
-      deletedPost.post.isRemoved = true;
+      deletedPost.isRemoved = true;
       await deletedPost.save();
 
       res.status(200).json({ message: "post deleted", postId });
@@ -114,6 +113,8 @@ const toggleLike = async (req, res) => {
       let { postId } = req.body;
 
       let likedPost = await Post.findById(postId);
+      let notifyPostAuthor = await User.findById(likedPost.author);
+
       const isLiked = likedPost.likedBy.find(
          (likedUser) => likedUser.user.toString() === user._id.toString()
       );
@@ -121,11 +122,25 @@ const toggleLike = async (req, res) => {
          likedPost.likedBy = likedPost.likedBy.filter(
             (likedUser) => likedUser.user.toString() !== user._id.toString()
          );
+         notifyPostAuthor.notifications = notifyPostAuthor.notifications.filter(
+            ({ notificationType, activityByUser }) =>
+               !(notificationType === "LIKED" && activityByUser.toString() === user._id.toString())
+         );
       } else {
          likedPost.likedBy.push({ user: user._id });
+         const setNotification = {
+            notificationType: "LIKED",
+            activityByUser: user._id,
+            notify: "liked your post",
+            likedPost: postId,
+            isRead: false,
+            createdOn: Date.now(),
+         };
+         notifyPostAuthor.notifications.push(setNotification);
       }
 
       await likedPost.save();
+      await notifyPostAuthor.save();
 
       likedPost = await likedPost
          .populate({

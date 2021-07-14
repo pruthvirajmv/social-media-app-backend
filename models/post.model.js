@@ -21,7 +21,7 @@ const PostSchema = new mongoose.Schema(
          { user: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, comment: { type: String } },
       ],
 
-      createdOn: { type: Number, required: "post creation date is required" },
+      createdOn: { type: Date, default: Date.now },
 
       isRemoved: { type: Boolean, default: false },
    },

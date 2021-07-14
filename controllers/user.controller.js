@@ -138,6 +138,8 @@ const getUserProfile = async (req, res) => {
 
       user.bookmarks = user.bookmarks.filter(({ post }) => !post.isRemoved);
 
+      user.notifications = user.notifications.filter(({ isRead }) => !isRead);
+
       res.status(200).json({ user });
    } catch (error) {
       res.status(500).json({
@@ -222,6 +224,13 @@ const toggleUserFromFollowing = async (req, res) => {
          toggleFollowersOfUser.followers = toggleFollowersOfUser.followers.filter(
             (follower) => follower.user.toString() !== user._id.toString()
          );
+         toggleFollowersOfUser.notifications = toggleFollowersOfUser.notifications.filter(
+            ({ notificationType, activityByUser }) =>
+               !(
+                  notificationType === "FOLLOWED" &&
+                  activityByUser.toString() === user._id.toString()
+               )
+         );
          await user.save();
          await toggleFollowersOfUser.save();
 
@@ -239,6 +248,14 @@ const toggleUserFromFollowing = async (req, res) => {
       } else {
          user.following.push({ user: userId });
          toggleFollowersOfUser.followers.push({ user: user._id });
+         const setNotification = {
+            notificationType: "FOLLOWED",
+            activityByUser: user._id,
+            notify: "started to follow you",
+            isRead: false,
+            createdOn: Date.now(),
+         };
+         toggleFollowersOfUser.notifications.push(setNotification);
          await user.save();
          await toggleFollowersOfUser.save();
 
@@ -261,6 +278,49 @@ const toggleUserFromFollowing = async (req, res) => {
    }
 };
 
+const readNotification = (req, res) => {
+   try {
+      let { user } = req;
+      const { notificationId } = req.body;
+      user.notifications = user.notifications.map((notification) => {
+         if (notification._id.toString() === notificationId) {
+            notification.isRead = true;
+         }
+         return notification;
+      });
+      user.save();
+      user.notifications = user.notifications.filter(({ isRead }) => !isRead);
+      res.status(200).json({
+         message: "notification read",
+         notifications: user.notifications,
+      });
+   } catch (error) {
+      res.status(500).json({
+         message: "something went wrong, please try again",
+         errorMessage: error.message,
+      });
+   }
+};
+const clearNotifications = (req, res) => {
+   try {
+      let { user } = req;
+      user.notifications = user.notifications.map((notification) => {
+         notification.isRead = true;
+         return notification;
+      });
+      user.save();
+      res.status(200).json({
+         message: "notifications cleared",
+         notifications: user.notifications,
+      });
+   } catch (error) {
+      res.status(500).json({
+         message: "something went wrong, please try again",
+         errorMessage: error.message,
+      });
+   }
+};
+
 module.exports = {
    getUsersProfile,
 
@@ -272,4 +332,7 @@ module.exports = {
 
    toggleUserFromFollowing,
    togglePostFromBookmarks,
+
+   readNotification,
+   clearNotifications,
 };

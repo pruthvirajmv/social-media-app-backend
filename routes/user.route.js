@@ -13,6 +13,9 @@ const {
    toggleUserFromFollowing,
 
    togglePostFromBookmarks,
+
+   readNotification,
+   clearNotifications,
 } = require("../controllers/user.controller");
 
 const { authentication } = require("../middlewares/authentication.middleware");
@@ -29,5 +32,8 @@ router.route("/resetpassword").post(resetOrUpdateUserPassword);
 
 router.route("/bookmark").post(authentication, togglePostFromBookmarks);
 router.route("/follow").post(authentication, toggleUserFromFollowing);
+
+router.route("/readnotification").post(authentication, readNotification);
+router.route("/clearnotifications").post(authentication, clearNotifications);
 
 module.exports = router;
