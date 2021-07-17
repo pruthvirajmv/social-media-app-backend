@@ -22,7 +22,6 @@ const addNewUser = async (req, res) => {
 
       res.status(200).json({ message: "user added", NewUser });
    } catch (error) {
-      console.log(error);
       if (error.name === "MongoError" && error.code === 11000) {
          if (error.keyPattern.userName) {
             return res.status(422).json({

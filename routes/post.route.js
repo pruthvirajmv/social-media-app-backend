@@ -3,7 +3,7 @@ const router = express.Router();
 
 const {
    loadSelectedUserPosts,
-   loadUserPosts,
+   loadAllPosts,
    addNewPost,
    deletePost,
    toggleLike,
@@ -15,7 +15,7 @@ router.route("/:username").get(loadSelectedUserPosts);
 
 router.use(authentication);
 
-router.route("/").get(loadUserPosts);
+router.route("/").get(loadAllPosts);
 
 router.route("/add").post(addNewPost);
 

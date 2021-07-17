@@ -20,7 +20,7 @@ const loadSelectedUserPosts = async (req, res) => {
          })
          .exec();
 
-      userPosts = userPosts.filter(({ post }) => !post.isRemoved);
+      userPosts = userPosts.filter((post) => !post.isRemoved);
 
       res.status(200).json({ message: "user posts loaded", userPosts });
    } catch (error) {
@@ -30,9 +30,8 @@ const loadSelectedUserPosts = async (req, res) => {
       });
    }
 };
-const loadUserPosts = async (req, res) => {
+const loadAllPosts = async (req, res) => {
    try {
-      const { user } = req;
       let userPosts = await Post.find({})
          .populate({
             path: "author",
@@ -81,7 +80,6 @@ const addNewPost = async (req, res) => {
 
       res.status(200).json({ message: "new post added", newPost });
    } catch (error) {
-      console.log(error);
       res.status(500).json({
          message: "could not add post",
          errorMessage: error.message,
@@ -187,7 +185,7 @@ const addComment = async (req, res) => {
 
 module.exports = {
    loadSelectedUserPosts,
-   loadUserPosts,
+   loadAllPosts,
    addNewPost,
    deletePost,
    toggleLike,
