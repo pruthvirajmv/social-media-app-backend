@@ -53,6 +53,7 @@ const loginUser = async (req, res) => {
          if (verifyPassword) {
             const token = jwt.sign({ userId: user._id }, JWT_KEY, { expiresIn: "24h" });
             user.token = token;
+            user.notifications = user.notifications.filter(({ isRead }) => !isRead);
             await user.save();
             user.__v = undefined;
             user.password = undefined;
