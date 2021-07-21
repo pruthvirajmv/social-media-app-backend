@@ -69,6 +69,10 @@ const addNewPost = async (req, res) => {
       await newPost.save();
       newPost = await newPost
          .populate({
+            path: "author",
+            select: "_id userName fullName profilePicName profilePic ",
+         })
+         .populate({
             path: "likedBy.user",
             select: "_id userName fullName profilePicName profilePic ",
          })
