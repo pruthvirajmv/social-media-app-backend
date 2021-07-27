@@ -20,7 +20,11 @@ const addNewUser = async (req, res) => {
       NewUser.__v = undefined;
       NewUser.password = undefined;
 
-      res.status(200).json({ message: "user added", NewUser });
+      req.body.email = addUser.email;
+      req.body.password = addUser.password;
+
+      loginUser(req, res);
+      // res.status(200).json({ message: "user added", NewUser });
    } catch (error) {
       if (error.name === "MongoError" && error.code === 11000) {
          if (error.keyPattern.userName) {
@@ -94,7 +98,7 @@ const resetOrUpdateUserPassword = async (req, res) => {
 
 const getUsersProfile = async (req, res) => {
    try {
-      let users = await User.find({}, "userName fullName profilePic profilePicName")
+      let users = await User.find({}, "userName fullName profilePic profilePicName bio website")
          .populate({
             path: "followers.user",
             select: "_id userName fullName profilePicName profilePic ",
